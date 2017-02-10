@@ -2,19 +2,27 @@
 
 const Fs = require('fs');
 const Csv = require('csv');
+const Crypto = require('crypto');
 
-const parseChurchTeams = (stream) => {
+const writeCsv = (data, file) => {
 
-    const parser = stream.pipe(Csv.parse({
-        columns: true
-    }));
+    return new Promise((resolve, reject) => {
 
-    parser.on('readable', () => {
-        let data;
-        while (data = parser.read()) {
-            
-            process.stdout.write(JSON.stringify(data));
-        }
+        Csv.stringify(data, { header: true }, (err, csv) => {
+
+            if (err) {
+                return reject(err);
+            }
+
+            Fs.writeFile(file, csv, (err) => {
+
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
+        });
     });
 };
 
@@ -52,6 +60,36 @@ const pluckFromCSV = (keys, file) => {
     });
 };
 
+const prepareNamesForRock = (names) => {
+
+    return prepareIndividualsForRock(names.map((entry) => {
+
+        const familyIdHash = Crypto.createHash('sha256');
+        familyIdHash.update(entry.LastName);
+
+        const personIdHash = Crypto.createHash('sha256');
+        personIdHash.update(entry.LastName + entry.FirstName);
+        
+        return {
+            FamilyId: 'ACENF-' + familyIdHash.digest('hex'),
+            FamilyName: entry.LastName + ' Family',
+            CreatedDate: '2017-02-10',
+            FirstName: entry.FirstName,
+            LastName: entry.LastName,
+            PersonId: 'ACENP-' + personIdHash.digest('hex'),
+            MaritalStatus: '',
+            HomePhone: '',
+            MobilePhone: '',
+            WorkPhone: '',
+            Email: '',
+            Gender: '',
+            DateOfBirth: '',
+            AgeCategory: '',
+            ImportedFromNameTag: 'Yes'
+        };
+    }));
+};
+
 const normalizeNames = (names) => {
 
     return names.map((name) => {
@@ -75,10 +113,33 @@ const normalizeEmails = (emails) => {
             FirstName: email['First Name'],
             LastName: email['Last Name'],
             Email: email['Email Address'],
+            RecordStatus: 'Active',
             IsEmailActive: 'Yes',
             'Allow Bulk Email?': 'Yes'
         };
     });
+};
+
+const setEmailForIndividuals = (emails) => (entry) => {
+
+    let match = emails.find((email) =>
+        (
+            email.FirstName === entry.FirstName &&
+            email.LastName === entry.LastName
+        ) || email.Email === entry.Email
+    );
+
+    if (match) {
+        console.log('Found an active email: %j', match);
+
+        Object.keys(match).forEach((key) => {
+            entry[key] = match[key];
+        });
+
+        match.__Found = true;
+    }
+
+    return entry;
 };
 
 const CT_FIELDS = [
@@ -141,7 +202,7 @@ const normalizeISODate = (date) => {
     return date;
 };
 
-const normalizeMartialStatus = (status) => status;
+const normalizeMaritalStatus = (status) => status;
 
 const normalizeState = (state) => {
 
@@ -191,8 +252,8 @@ const normalizeIndividuals = (individuals) => {
         return {
             FamilyId: entry.FamilyID,
             PersonId: entry.MemberID,
-            LastName: entry.LastName,
-            FirstName: entry.FirstName,
+            LastName: entry.LastName.trim(),
+            FirstName: entry.FirstName.trim(),
             Address: entry.Address1,
             Address2: entry.Address2,
             City: entry.City,
@@ -207,7 +268,7 @@ const normalizeIndividuals = (individuals) => {
             Email: entry.EmailAddress,
             DateOfBirth: normalizeDate(entry['Birth Date']),
             CreatedDate: normalizeISODate(entry.DateCreated),
-            MartialStatus: normalizeMartialStatus(entry['Marital Status']),
+            MaritalStatus: normalizeMaritalStatus(entry['Marital Status']),
             FirstVisit: normalizeDate(entry['First Visit']),
             AgeCategory: entry.AgeCategory
         };
@@ -295,7 +356,8 @@ const prepareIndividualsForRock = (individuals) => {
             MedicalNote: '',
             SecurityNote: '',
             // Begin custom attributes
-            AgeCategory: entry.AgeCategory
+            AgeCategory: entry.AgeCategory,
+            ImportedFromNameTag: entry.ImportedFromNameTag || 'No'
         };
     });
 };
@@ -309,7 +371,7 @@ const setActiveForNames = (names) => {
                 name.LastName === entry.LastName);
 
         if (active) {
-            console.log('Found an active member: %j', active);
+            // console.log('Found an active member: %j', active);
 
             Object.keys(active).forEach((key) => {
                 entry[key] = active[key];
@@ -356,9 +418,30 @@ module.exports = (argv) => {
         console.log('%s active names are not in the CT export',
             activeNames.filter((name) => !name.__Found).length);
 
+        /*
         console.log('Active names not in the CT export',
             activeNames.filter((name) => !name.__Found));
+        */
 
+        console.log('Creating synthetic records for active names not in CT export');
+        const nameIndividuals = prepareNamesForRock(
+            activeNames.filter((name) => !name.__Found)).map(setActiveForNames(activeNames));
+
+        console.log('%s active names are not in any export',
+            activeNames.filter((name) => !name.__Found).length);
+
+        const allIndividuals = rockIndividuals.concat(nameIndividuals).map(
+            setEmailForIndividuals(activeEmails));
+
+        console.log('%s active emails are not in any export',
+            activeEmails.filter((name) => !name.__Found).length);
+
+        console.log('%s active emails not in any export',
+            activeEmails.filter((name) => !name.__Found).map((name) => name.Email));
+
+        console.log(allIndividuals);
+
+        writeCsv(allIndividuals, argv['output-individual-file']);
     });
 
 };

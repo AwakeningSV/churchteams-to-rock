@@ -214,6 +214,38 @@ const normalizeIndividuals = (individuals) => {
     });
 };
 
+const familiesFromIndividuals = (individuals) => {
+
+    return individuals.map((entry) => {
+
+        return {
+            FamilyId: entry.FamilyId,
+            FamilyName: entry.LastName + ' Family',
+            CreatedDate: entry.CreatedDate,
+            Campus: entry.Campus,
+            Address: entry.Address,
+            Address2: entry.Address2,
+            City: entry.City,
+            State: entry.State,
+            ZipCode: entry.ZipCode,
+            Country: entry.Country
+        };
+    }).filter((entry, index, self) => index === self.findIndex((x) => {
+
+        const match = x.FamilyId === entry.FamilyId;
+
+        if (match) {
+            Object.keys(x).forEach((key) => {
+                if (key !== 'CreatedDate' && x[key] !== entry[key]) {
+                    console.warn('Warning: Same FamilyId has differing data', {x, entry});
+                }
+            });
+        }
+
+        return match;
+    }));
+};
+
 module.exports = (argv) => {
 
     Promise.all([
@@ -236,6 +268,14 @@ module.exports = (argv) => {
             individuals.length,
             activeNames.length,
             activeEmails.length);
+
+        const families = familiesFromIndividuals(individuals);
+/*
+        console.log({
+            families
+        });
+*/
+        console.log('Ready to export %s families', families.length);
     });
 
 };

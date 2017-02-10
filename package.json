@@ -1,0 +1,28 @@
+{
+  "name": "churchteams-to-rock",
+  "version": "1.0.0",
+  "description": "Import a CSV of ChurchTeams data into a format ready for Rock Excavator",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/awakening-church/churchteams-to-rock.git"
+  },
+  "keywords": [
+    "rock",
+    "churchteams",
+    "excavator"
+  ],
+  "author": "Reid Burke <reid@awakeningchurch.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/awakening-church/churchteams-to-rock/issues"
+  },
+  "homepage": "https://github.com/awakening-church/churchteams-to-rock#readme",
+  "dependencies": {
+    "csv": "^1.1.1",
+    "yargs": "^6.6.0"
+  }
+}

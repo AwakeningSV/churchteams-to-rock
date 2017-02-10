@@ -2,7 +2,8 @@
   "name": "churchteams-to-rock",
   "version": "1.0.0",
   "description": "Import a CSV of ChurchTeams data into a format ready for Rock Excavator",
-  "main": "index.js",
+  "main": "transform.js",
+  "bin": "index.js",
   "scripts": {
     "test": "jest"
   },

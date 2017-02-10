@@ -283,13 +283,13 @@ const familiesFromIndividuals = (individuals) => {
             FamilyId: entry.FamilyId,
             FamilyName: entry.LastName + (entry.LastName.indexOf('Family') === -1 ? ' Family' : ''),
             CreatedDate: entry.CreatedDate,
-            Campus: entry.Campus,
-            Address: entry.Address,
-            Address2: entry.Address2,
-            City: entry.City,
-            State: entry.State,
-            ZipCode: entry.ZipCode,
-            Country: entry.Country,
+            Campus: entry.Campus || 'Del Mar High School',
+            Address: entry.Address || '',
+            Address2: entry.Address2 || '',
+            City: entry.City || '',
+            State: entry.State || '',
+            ZipCode: entry.ZipCode || '',
+            Country: entry.Country || '',
             SecondaryAddress: '',
             SecondaryAddress2: '',
             SecondaryCity: '',
@@ -397,12 +397,6 @@ module.exports = (argv) => {
         const activeEmails = normalizeEmails(values[1]);
         const individuals = normalizeIndividuals(values[2]);
 
-        console.log({
-            activeNames,
-            activeEmails
-            // individuals
-        });
-
         const families = familiesFromIndividuals(individuals);
         const rockIndividuals = prepareIndividualsForRock(individuals)
             .map(setActiveForNames(activeNames));
@@ -439,9 +433,16 @@ module.exports = (argv) => {
         console.log('%s active emails not in any export',
             activeEmails.filter((name) => !name.__Found).map((name) => name.Email));
 
-        console.log(allIndividuals);
+        const allFamilies = families.concat(familiesFromIndividuals(nameIndividuals));
 
-        writeCsv(allIndividuals, argv['output-individual-file']);
+        console.log('Final export: %s individuals and %s families', allIndividuals.length, allFamilies.length);
+
+        Promise.all([
+            writeCsv(allIndividuals, argv['output-individual-file']),
+            writeCsv(allFamilies, argv['output-family-file'])
+        ]).then(() => {
+            console.log('Complete.');
+        });
     });
 
 };

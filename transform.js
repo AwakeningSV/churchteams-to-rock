@@ -52,8 +52,34 @@ const pluckFromCSV = (keys, file) => {
     });
 };
 
-const normalizeNames = (names) => names;
-const normalizeEmails = (emails) => emails;
+const normalizeNames = (names) => {
+
+    return names.map((name) => {
+
+        const parts = name.Name.split(' ');
+
+        return {
+            FirstName: parts.shift(),
+            LastName: parts.join(' '),
+            ConnectionStatus: 'Attendee',
+            RecordStatus: 'Active'
+        };
+    });
+};
+
+const normalizeEmails = (emails) => {
+
+    return emails.map((email) => {
+
+        return {
+            FirstName: email['First Name'],
+            LastName: email['Last Name'],
+            Email: email['Email Address'],
+            IsEmailActive: 'Yes',
+            'Allow Bulk Email?': 'Yes'
+        };
+    });
+};
 
 module.exports = (argv) => {
 

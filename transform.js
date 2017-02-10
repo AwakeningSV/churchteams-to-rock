@@ -130,7 +130,7 @@ const setEmailForIndividuals = (emails) => (entry) => {
     );
 
     if (match) {
-        console.log('Found an active email: %j', match);
+        // console.log('Found an active email: %j', match);
 
         Object.keys(match).forEach((key) => {
             entry[key] = match[key];
@@ -257,7 +257,7 @@ const normalizeIndividuals = (individuals) => {
             Address: entry.Address1,
             Address2: entry.Address2,
             City: entry.City,
-            State: normalizeState(entry.State), // TODO must verify
+            State: normalizeState(entry.State),
             ZipCode: entry.ZipCode,
             Country,
             Campus: 'Del Mar High School',
@@ -308,10 +308,10 @@ const familiesFromIndividuals = (individuals) => {
 
         const match = x.FamilyId === entry.FamilyId;
 
-        if (match) {
+        if (false && match) {
             Object.keys(x).forEach((key) => {
                 if (key !== 'CreatedDate' && x[key] !== entry[key]) {
-                    // console.warn('Warning: Same FamilyId has differing data', {x, entry});
+                    console.warn('Warning: Same FamilyId has differing data', {x, entry});
                 }
             });
         }
@@ -412,11 +412,6 @@ module.exports = (argv) => {
         console.log('%s active names are not in the CT export',
             activeNames.filter((name) => !name.__Found).length);
 
-        /*
-        console.log('Active names not in the CT export',
-            activeNames.filter((name) => !name.__Found));
-        */
-
         console.log('Creating synthetic records for active names not in CT export');
         const nameIndividuals = prepareNamesForRock(
             activeNames.filter((name) => !name.__Found)).map(setActiveForNames(activeNames));
@@ -435,7 +430,8 @@ module.exports = (argv) => {
 
         const allFamilies = families.concat(familiesFromIndividuals(nameIndividuals));
 
-        console.log('Final export: %s individuals and %s families', allIndividuals.length, allFamilies.length);
+        console.log('Final export: %s individuals and %s families',
+            allIndividuals.length, allFamilies.length);
 
         Promise.all([
             writeCsv(allIndividuals, argv['output-individual-file']),

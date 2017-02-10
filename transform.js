@@ -220,7 +220,7 @@ const familiesFromIndividuals = (individuals) => {
 
         return {
             FamilyId: entry.FamilyId,
-            FamilyName: entry.LastName + ' Family',
+            FamilyName: entry.LastName + (entry.LastName.indexOf('Family') === -1 ? ' Family' : ''),
             CreatedDate: entry.CreatedDate,
             Campus: entry.Campus,
             Address: entry.Address,
@@ -228,8 +228,21 @@ const familiesFromIndividuals = (individuals) => {
             City: entry.City,
             State: entry.State,
             ZipCode: entry.ZipCode,
-            Country: entry.Country
+            Country: entry.Country,
+            SecondaryAddress: '',
+            SecondaryAddress2: '',
+            SecondaryCity: '',
+            SecondaryState: '',
+            SecondaryZip: '',
+            SecondaryCountry: ''
         };
+    }).sort((a, b) => {
+
+        const prevDate = +Date.parse(a.CreatedDate);
+        const nextDate = +Date.parse(b.CreatedDate);
+        const priority = a.Gender === 'M' ? 1 : 0;
+
+        return prevDate - nextDate - priority;
     }).filter((entry, index, self) => index === self.findIndex((x) => {
 
         const match = x.FamilyId === entry.FamilyId;
@@ -244,6 +257,47 @@ const familiesFromIndividuals = (individuals) => {
 
         return match;
     }));
+};
+
+const prepareIndividualsForRock = (individuals) => {
+
+    return individuals.map((entry) => {
+
+        return {
+            FamilyId: entry.FamilyId,
+            FamilyName: entry.LastName + (entry.LastName.indexOf('Family') === -1 ? ' Family' : ''),
+            CreatedDate: entry.CreatedDate,
+            PersonId: entry.PersonId,
+            Prefix: '',
+            FirstName: entry.FirstName,
+            NickName: '',
+            MiddleName: '',
+            LastName: entry.LastName,
+            Suffix: '',
+            FamilyRole: 'Adult',
+            MaritalStatus: entry.MaritalStatus,
+            ConnectionStatus: '',
+            RecordStatus: 'Inactive',
+            IsDeceased: 'No',
+            HomePhone: entry.HomePhone,
+            MobilePhone: entry.MobilePhone,
+            WorkPhone: entry.WorkPhone,
+            'SMS Allowed?': '',
+            Email: entry.Email,
+            IsEmailActive: 'No',
+            'Allow Bulk Email?': 'No',
+            Gender: entry.Gender,
+            DateOfBirth: entry.DateOfBirth,
+            School: '',
+            GraduationDate: '',
+            AnniversaryDate: '',
+            GeneralNote: '',
+            MedicalNote: '',
+            SecurityNote: '',
+            // Begin custom attributes
+            AgeCategory: entry.AgeCategory
+        };
+    });
 };
 
 module.exports = (argv) => {
@@ -264,18 +318,16 @@ module.exports = (argv) => {
             individuals
         });
 
-        console.log('Processing %s individuals with %s active names and %s active emails',
+        const families = familiesFromIndividuals(individuals);
+        const rockIndividuals = prepareIndividualsForRock(individuals);
+
+        console.log('Processed %s individuals with %s active names and %s active emails',
             individuals.length,
             activeNames.length,
             activeEmails.length);
-
-        const families = familiesFromIndividuals(individuals);
-/*
-        console.log({
-            families
-        });
-*/
-        console.log('Ready to export %s families', families.length);
+        console.log('Prepared to export %s families and %s individuals for Rock',
+            families.length,
+            rockIndividuals.length);
     });
 
 };

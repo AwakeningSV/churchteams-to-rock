@@ -250,7 +250,7 @@ const familiesFromIndividuals = (individuals) => {
         if (match) {
             Object.keys(x).forEach((key) => {
                 if (key !== 'CreatedDate' && x[key] !== entry[key]) {
-                    console.warn('Warning: Same FamilyId has differing data', {x, entry});
+                    // console.warn('Warning: Same FamilyId has differing data', {x, entry});
                 }
             });
         }
@@ -300,6 +300,29 @@ const prepareIndividualsForRock = (individuals) => {
     });
 };
 
+const setActiveForNames = (names) => {
+
+    return (entry) => {
+
+        const active = names.find((name) =>
+                name.FirstName === entry.FirstName &&
+                name.LastName === entry.LastName);
+
+        if (active) {
+            console.log('Found an active member: %j', active);
+
+            Object.keys(active).forEach((key) => {
+                entry[key] = active[key];
+            });
+
+            active.__Found = true;
+        }
+
+        return entry;
+    };
+};
+
+
 module.exports = (argv) => {
 
     Promise.all([
@@ -314,12 +337,13 @@ module.exports = (argv) => {
 
         console.log({
             activeNames,
-            activeEmails,
-            individuals
+            activeEmails
+            // individuals
         });
 
         const families = familiesFromIndividuals(individuals);
-        const rockIndividuals = prepareIndividualsForRock(individuals);
+        const rockIndividuals = prepareIndividualsForRock(individuals)
+            .map(setActiveForNames(activeNames));
 
         console.log('Processed %s individuals with %s active names and %s active emails',
             individuals.length,
@@ -328,6 +352,13 @@ module.exports = (argv) => {
         console.log('Prepared to export %s families and %s individuals for Rock',
             families.length,
             rockIndividuals.length);
+
+        console.log('%s active names are not in the CT export',
+            activeNames.filter((name) => !name.__Found).length);
+
+        console.log('Active names not in the CT export',
+            activeNames.filter((name) => !name.__Found));
+
     });
 
 };
